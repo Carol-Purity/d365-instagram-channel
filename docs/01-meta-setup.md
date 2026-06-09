@@ -1,8 +1,20 @@
 # Meta / Instagram setup
 
-You need four things from Meta. Set aside ~20 minutes the first time.
+This guide gets you the **four Instagram values** the relay needs. Set aside **~20 minutes** the first time.
 
-> You must have an **Instagram professional account** (Business or Creator) and a **Meta (Facebook) developer account**.
+> **Before you begin** you need an **Instagram professional account** (Business or Creator) and a **Meta (Facebook) developer account**.
+
+**At a glance**
+
+| Step | You'll do |
+| --- | --- |
+| 1 | Create a Meta app |
+| 2 | Add the Instagram product |
+| 3 | Collect your four values |
+| 4 | Deploy the relay, then come back |
+| 5 | Point Meta's webhook at the relay |
+| 6 | (If serving others) request App Review |
+| 7 | Send a test DM |
 
 ---
 
@@ -20,22 +32,34 @@ You need four things from Meta. Set aside ~20 minutes the first time.
 
 ## 3. Collect your values
 
-| Value | Where to find it |
-| --- | --- |
-| **App Secret** | App dashboard → **Settings → Basic → App Secret** (click *Show*). |
-| **Instagram account ID (IG_ID)** | Instagram product → **API setup** page; or call `GET https://graph.instagram.com/v23.0/me?fields=user_id,username` with a user token. |
-| **Access token** | Instagram product → generate an **Instagram User access token** for the account, then exchange it for a **long‑lived** token (valid ~60 days). |
-| **Verify token** | A string **you invent** now (e.g. `contoso-ig-verify-9f3a`). Keep it handy — you enter it in Azure **and** in the webhook config. |
+You're gathering **four values**. Keep them in a scratch note as you go.
+
+**① App Secret**
+App dashboard → **Settings → Basic → App Secret** → click *Show*.
+
+**② Instagram account ID (IG_ID)**
+Instagram product → **API setup** page.
+Or call `GET https://graph.instagram.com/v23.0/me?fields=user_id,username` with a user token.
+
+**③ Access token**
+Instagram product → generate an **Instagram User access token** for the account, then make it **long‑lived** (see below).
+
+**④ Verify token**
+A string **you make up** (e.g. `contoso-ig-verify-9f3a`). The Azure deploy form even prefills one for you — just keep that exact value handy, because you enter the **same** value in Meta's webhook config later.
 
 ### Make the access token long‑lived
+
+A freshly generated token is short‑lived. Exchange it for one that lasts **~60 days**:
 
 ```bash
 curl -s "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=<APP_SECRET>&access_token=<SHORT_LIVED_TOKEN>"
 ```
 
-The response contains a long‑lived `access_token`. Use that value in Azure.
+The response contains a long‑lived `access_token` — that's the value ③ you paste into Azure.
 
-> Long‑lived tokens expire (~60 days). Refresh before expiry and update the Container App secret `instagram-access-token`. A future version can automate refresh.
+> Prefer no command line? Deploy first, then use the **Setup Assistant** (the `setupUrl` output) to do this exchange with a button.
+
+> Long‑lived tokens expire (~60 days). When it's time to refresh, the easiest way is the **Setup Assistant** (the `setupUrl` output): paste a fresh short‑lived token and it returns a long‑lived one to copy into the `instagram-access-token` secret — no command line.
 
 ---
 

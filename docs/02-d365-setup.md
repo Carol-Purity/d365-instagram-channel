@@ -1,8 +1,19 @@
 # Dynamics 365 Omnichannel setup
 
-Goal: register a **custom messaging channel** (Direct Line), get its **secret** for the relay, and route Instagram conversations to your agents.
+**Goal:** register a **custom messaging channel** (Direct Line), copy its **secret** for the relay, and route Instagram conversations to your agents. Plan for **~15 minutes**.
 
-> Requires **Dynamics 365 Customer Service** with the **Digital Messaging** add‑on and the **Omnichannel admin center** app.
+> **Requires** Dynamics 365 Customer Service with the **Digital Messaging** add‑on and the **Omnichannel admin center** app.
+
+**At a glance**
+
+| Step | You'll do |
+| --- | --- |
+| 1 | Create the custom messaging (Direct Line) channel and copy its secret |
+| 2 | Create a workstream and point it at the channel |
+| 3 | Add a queue and assign agents |
+| 4 | Tune conversation settings (optional) |
+| 5 | Connect the relay (paste the secret in Azure) |
+| 6 | Verify end to end |
 
 ---
 
