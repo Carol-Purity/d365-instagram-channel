@@ -1,0 +1,209 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "5014427354192882179"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "appName": {
+      "type": "string",
+      "defaultValue": "ig-d365-relay",
+      "minLength": 3,
+      "maxLength": 24,
+      "metadata": {
+        "description": "Base name used for the Container App and its environment."
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "ghcr.io/moliveirapinto/d365-instagram-channel:latest",
+      "metadata": {
+        "description": "Container image to deploy. Defaults to the public prebuilt relay image."
+      }
+    },
+    "instagramAppSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Instagram App Secret (Meta app > Settings > Basic). Used to verify webhook signatures."
+      }
+    },
+    "instagramVerifyToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "A verify token you invent. Enter the SAME value in the Meta webhook configuration."
+      }
+    },
+    "instagramAccessToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Long-lived Instagram User access token used to send replies."
+      }
+    },
+    "instagramAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Your Instagram professional account ID (IG_ID)."
+      }
+    },
+    "directLineSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Direct Line secret from the Dynamics 365 Omnichannel custom messaging channel."
+      }
+    }
+  },
+  "variables": {
+    "logName": "[format('{0}-logs', parameters('appName'))]",
+    "envName": "[format('{0}-env', parameters('appName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('logName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('envName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('appName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 8080,
+            "transport": "auto",
+            "allowInsecure": false
+          },
+          "secrets": [
+            {
+              "name": "instagram-app-secret",
+              "value": "[parameters('instagramAppSecret')]"
+            },
+            {
+              "name": "instagram-verify-token",
+              "value": "[parameters('instagramVerifyToken')]"
+            },
+            {
+              "name": "instagram-access-token",
+              "value": "[parameters('instagramAccessToken')]"
+            },
+            {
+              "name": "direct-line-secret",
+              "value": "[parameters('directLineSecret')]"
+            }
+          ]
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "relay",
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1Gi"
+              },
+              "env": [
+                {
+                  "name": "PORT",
+                  "value": "8080"
+                },
+                {
+                  "name": "INSTAGRAM_ACCOUNT_ID",
+                  "value": "[parameters('instagramAccountId')]"
+                },
+                {
+                  "name": "INSTAGRAM_APP_SECRET",
+                  "secretRef": "instagram-app-secret"
+                },
+                {
+                  "name": "INSTAGRAM_VERIFY_TOKEN",
+                  "secretRef": "instagram-verify-token"
+                },
+                {
+                  "name": "INSTAGRAM_ACCESS_TOKEN",
+                  "secretRef": "instagram-access-token"
+                },
+                {
+                  "name": "DIRECT_LINE_SECRET",
+                  "secretRef": "direct-line-secret"
+                }
+              ],
+              "probes": [
+                {
+                  "type": "Liveness",
+                  "httpGet": {
+                    "path": "/health",
+                    "port": 8080
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 30
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 1
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "webhookUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Paste this URL into the Meta webhook configuration as the Callback URL."
+      },
+      "value": "[format('https://{0}/webhooks/instagram', reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2024-03-01').configuration.ingress.fqdn)]"
+    },
+    "healthUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Health endpoint to confirm the relay is running."
+      },
+      "value": "[format('https://{0}/health', reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2024-03-01').configuration.ingress.fqdn)]"
+    }
+  }
+}

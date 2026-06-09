@@ -1,0 +1,159 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "config": {
+      "isWizard": false,
+      "basics": {
+        "description": "Connect Instagram Direct messages to your Dynamics 365 Omnichannel agents. Fill in the values below, then click **Review + create**. When the deployment finishes, copy the **webhookUrl** from the Outputs and paste it into Meta.",
+        "location": {
+          "label": "Region",
+          "toolTip": "Azure region to host the relay. Pick the one closest to your agents.",
+          "resourceTypes": ["Microsoft.App/containerApps"]
+        }
+      }
+    },
+    "steps": [
+      {
+        "name": "instagram",
+        "label": "Instagram (Meta)",
+        "elements": [
+          {
+            "name": "igInfo",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "These values come from your Meta app and Instagram professional account. See the project README, step 'Meta setup', for where to find each one."
+            }
+          },
+          {
+            "name": "instagramAccountId",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Instagram account ID (IG_ID)",
+            "toolTip": "Your Instagram professional account ID.",
+            "constraints": {
+              "required": true,
+              "regex": "^[0-9]{5,}$",
+              "validationMessage": "Enter the numeric Instagram account ID."
+            }
+          },
+          {
+            "name": "instagramAppSecret",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "App Secret",
+              "confirmPassword": "Confirm App Secret"
+            },
+            "toolTip": "Meta app > Settings > Basic > App Secret. Used to verify webhook signatures.",
+            "constraints": {
+              "required": true
+            },
+            "options": {
+              "hideConfirmation": true
+            }
+          },
+          {
+            "name": "instagramVerifyToken",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "Webhook verify token",
+              "confirmPassword": "Confirm verify token"
+            },
+            "toolTip": "Any string you invent. You will enter the SAME value in the Meta webhook configuration.",
+            "constraints": {
+              "required": true
+            },
+            "options": {
+              "hideConfirmation": true
+            }
+          },
+          {
+            "name": "instagramAccessToken",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "Instagram access token",
+              "confirmPassword": "Confirm access token"
+            },
+            "toolTip": "Long-lived Instagram User access token used to send replies.",
+            "constraints": {
+              "required": true
+            },
+            "options": {
+              "hideConfirmation": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "d365",
+        "label": "Dynamics 365",
+        "elements": [
+          {
+            "name": "d365Info",
+            "type": "Microsoft.Common.InfoBox",
+            "visible": true,
+            "options": {
+              "icon": "Info",
+              "text": "The Direct Line secret comes from the custom messaging channel you register in the Omnichannel admin center. See the project README, step 'Dynamics 365 setup'."
+            }
+          },
+          {
+            "name": "directLineSecret",
+            "type": "Microsoft.Common.PasswordBox",
+            "label": {
+              "password": "Direct Line secret",
+              "confirmPassword": "Confirm Direct Line secret"
+            },
+            "toolTip": "Direct Line secret from the D365 Omnichannel custom messaging channel.",
+            "constraints": {
+              "required": true
+            },
+            "options": {
+              "hideConfirmation": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "advanced",
+        "label": "Advanced",
+        "elements": [
+          {
+            "name": "appName",
+            "type": "Microsoft.Common.TextBox",
+            "label": "App name",
+            "defaultValue": "ig-d365-relay",
+            "toolTip": "Name for the Container App. Lowercase letters, numbers and hyphens.",
+            "constraints": {
+              "required": true,
+              "regex": "^[a-z0-9-]{3,24}$",
+              "validationMessage": "3-24 chars: lowercase letters, numbers, hyphens."
+            }
+          },
+          {
+            "name": "containerImage",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Container image",
+            "defaultValue": "ghcr.io/moliveirapinto/d365-instagram-channel:latest",
+            "toolTip": "Leave the default unless you publish your own build.",
+            "constraints": {
+              "required": true
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "location": "[location()]",
+      "appName": "[steps('advanced').appName]",
+      "containerImage": "[steps('advanced').containerImage]",
+      "instagramAccountId": "[steps('instagram').instagramAccountId]",
+      "instagramAppSecret": "[steps('instagram').instagramAppSecret]",
+      "instagramVerifyToken": "[steps('instagram').instagramVerifyToken]",
+      "instagramAccessToken": "[steps('instagram').instagramAccessToken]",
+      "directLineSecret": "[steps('d365').directLineSecret]"
+    }
+  }
+}
