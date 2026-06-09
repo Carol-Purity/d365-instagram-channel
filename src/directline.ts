@@ -36,6 +36,24 @@ export async function startConversation(config: AppConfig): Promise<string> {
   return data.conversationId;
 }
 
+/**
+ * Confirm the Direct Line secret works by opening a throwaway conversation.
+ * Used by the Setup Assistant to give the user an instant green check.
+ * Throws a friendly Error when the secret is wrong.
+ */
+export async function validateSecret(config: AppConfig): Promise<string> {
+  if (!config.directLineSecret || config.directLineSecret.trim() === "") {
+    throw new Error("The Direct Line secret is not set yet.");
+  }
+  try {
+    return await startConversation(config);
+  } catch {
+    throw new Error(
+      "Dynamics 365 rejected the Direct Line secret. Copy it again from the custom messaging channel and make sure there are no extra spaces."
+    );
+  }
+}
+
 /** Post a user message activity into a Direct Line conversation. */
 export async function sendUserMessage(
   config: AppConfig,
