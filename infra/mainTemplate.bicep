@@ -149,5 +149,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
 @description('Paste this URL into the Meta webhook configuration as the Callback URL.')
 output webhookUrl string = 'https://${app.properties.configuration.ingress.fqdn}/webhooks/instagram'
 
+@description('Open this in a browser to run the guided Setup Assistant (test keys, subscribe webhook, refresh token).')
+output setupUrl string = 'https://${app.properties.configuration.ingress.fqdn}/setup'
+
 @description('Health endpoint to confirm the relay is running.')
 output healthUrl string = 'https://${app.properties.configuration.ingress.fqdn}/health'

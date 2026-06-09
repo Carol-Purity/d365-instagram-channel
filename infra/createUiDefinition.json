@@ -4,64 +4,104 @@
   "version": "0.1.2-preview",
   "parameters": {
     "config": {
-      "isWizard": false,
+      "isWizard": true,
       "basics": {
-        "description": "Connect Instagram Direct messages to your Dynamics 365 Omnichannel agents. Fill in the values below, then click **Review + create**. When the deployment finishes, copy the **webhookUrl** from the Outputs and paste it into Meta.",
+        "description": "**Bring Instagram Direct messages into Dynamics 365.** This short, guided form sets everything up for you. You'll paste a few values that you copy from Meta and Dynamics 365 — no coding required.\n\nNot sure where to get a value? Every step has a link to a step-by-step guide.",
         "location": {
           "label": "Region",
-          "toolTip": "Azure region to host the relay. Pick the one closest to your agents.",
+          "toolTip": "The part of the world where your service runs. Pick the one closest to your support agents.",
           "resourceTypes": ["Microsoft.App/containerApps"]
         }
       }
     },
     "steps": [
       {
-        "name": "instagram",
-        "label": "Instagram (Meta)",
+        "name": "start",
+        "label": "Before you start",
         "elements": [
           {
-            "name": "igInfo",
+            "name": "startIntro",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "To finish this form you'll need 4 values from Meta (Instagram) and 1 value from Dynamics 365. Have them ready and this takes about 3 minutes. If you don't have them yet, open the guides below first — then come back to this tab."
+            }
+          },
+          {
+            "name": "metaGuideLink",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Step-by-step guide to get your Instagram (Meta) values — about 10 minutes the first time.",
+              "link": {
+                "label": "Open the Instagram / Meta guide",
+                "uri": "https://github.com/moliveirapinto/d365-instagram-channel/blob/main/docs/01-meta-setup.md"
+              }
+            }
+          },
+          {
+            "name": "d365GuideLink",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Step-by-step guide to get your Dynamics 365 value (the Direct Line secret).",
+              "link": {
+                "label": "Open the Dynamics 365 guide",
+                "uri": "https://github.com/moliveirapinto/d365-instagram-channel/blob/main/docs/02-d365-setup.md"
+              }
+            }
+          },
+          {
+            "name": "checklistBox",
             "type": "Microsoft.Common.InfoBox",
             "visible": true,
             "options": {
               "icon": "Info",
-              "text": "These values come from your Meta app and Instagram professional account. See the project README, step 'Meta setup', for where to find each one."
+              "text": "Your checklist: (1) Instagram account ID  (2) Meta App Secret  (3) Instagram access token  (4) A webhook verify token — we make one up for you  (5) Dynamics 365 Direct Line secret"
+            }
+          }
+        ]
+      },
+      {
+        "name": "instagram",
+        "label": "Instagram keys",
+        "elements": [
+          {
+            "name": "instagramIntro",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Paste the values from your Meta app below. Copy them exactly — no extra spaces.",
+              "link": {
+                "label": "Where do I find these? Open the Meta guide",
+                "uri": "https://github.com/moliveirapinto/d365-instagram-channel/blob/main/docs/01-meta-setup.md"
+              }
             }
           },
           {
             "name": "instagramAccountId",
             "type": "Microsoft.Common.TextBox",
-            "label": "Instagram account ID (IG_ID)",
-            "toolTip": "Your Instagram professional account ID.",
+            "label": "Instagram account ID",
+            "placeholder": "e.g. 17841401234567890",
+            "toolTip": "A long number that identifies your Instagram professional account. In the Meta app: Instagram product > API setup page.",
             "constraints": {
               "required": true,
-              "regex": "^[0-9]{5,}$",
-              "validationMessage": "Enter the numeric Instagram account ID."
+              "validations": [
+                {
+                  "regex": "^[0-9]{5,}$",
+                  "message": "This should be just numbers (no letters or spaces). Copy it from the Meta app's Instagram API setup page."
+                }
+              ]
             }
           },
           {
             "name": "instagramAppSecret",
             "type": "Microsoft.Common.PasswordBox",
             "label": {
-              "password": "App Secret",
+              "password": "Meta App Secret",
               "confirmPassword": "Confirm App Secret"
             },
-            "toolTip": "Meta app > Settings > Basic > App Secret. Used to verify webhook signatures.",
-            "constraints": {
-              "required": true
-            },
-            "options": {
-              "hideConfirmation": true
-            }
-          },
-          {
-            "name": "instagramVerifyToken",
-            "type": "Microsoft.Common.PasswordBox",
-            "label": {
-              "password": "Webhook verify token",
-              "confirmPassword": "Confirm verify token"
-            },
-            "toolTip": "Any string you invent. You will enter the SAME value in the Meta webhook configuration.",
+            "toolTip": "In the Meta app: Settings > Basic > App Secret (click Show). This stays private — we store it securely and it's never shown again.",
             "constraints": {
               "required": true
             },
@@ -76,27 +116,54 @@
               "password": "Instagram access token",
               "confirmPassword": "Confirm access token"
             },
-            "toolTip": "Long-lived Instagram User access token used to send replies.",
+            "toolTip": "The long-lived Instagram access token from the Meta guide. It lets the service send replies on your behalf.",
             "constraints": {
               "required": true
             },
             "options": {
               "hideConfirmation": true
             }
+          },
+          {
+            "name": "verifyTokenHelp",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "The webhook verify token below is a password you make up. We've filled one in for you — keep it or change it. Important: you'll paste this exact same value into Meta later, so it's shown here (not hidden) on purpose."
+            }
+          },
+          {
+            "name": "instagramVerifyToken",
+            "type": "Microsoft.Common.TextBox",
+            "label": "Webhook verify token",
+            "defaultValue": "instagram-d365-verify",
+            "toolTip": "Any word or phrase you choose. You'll type the SAME value into Meta when you set up the webhook, so it's kept visible here so you can copy it.",
+            "constraints": {
+              "required": true,
+              "validations": [
+                {
+                  "regex": "^[A-Za-z0-9_-]{6,64}$",
+                  "message": "Use 6-64 letters, numbers, hyphens or underscores (no spaces). The default is fine to keep."
+                }
+              ]
+            }
           }
         ]
       },
       {
         "name": "d365",
-        "label": "Dynamics 365",
+        "label": "Dynamics 365 key",
         "elements": [
           {
-            "name": "d365Info",
-            "type": "Microsoft.Common.InfoBox",
+            "name": "d365Intro",
+            "type": "Microsoft.Common.TextBlock",
             "visible": true,
             "options": {
-              "icon": "Info",
-              "text": "The Direct Line secret comes from the custom messaging channel you register in the Omnichannel admin center. See the project README, step 'Dynamics 365 setup'."
+              "text": "Paste the one value from Dynamics 365 below — the Direct Line secret from the custom messaging channel you created.",
+              "link": {
+                "label": "Where do I find this? Open the Dynamics 365 guide",
+                "uri": "https://github.com/moliveirapinto/d365-instagram-channel/blob/main/docs/02-d365-setup.md"
+              }
             }
           },
           {
@@ -106,7 +173,7 @@
               "password": "Direct Line secret",
               "confirmPassword": "Confirm Direct Line secret"
             },
-            "toolTip": "Direct Line secret from the D365 Omnichannel custom messaging channel.",
+            "toolTip": "From the Omnichannel / Copilot Service admin center: the custom messaging (Direct Line) channel you created > its secret or key. This is what connects Instagram chats to your agents.",
             "constraints": {
               "required": true
             },
@@ -118,18 +185,30 @@
       },
       {
         "name": "advanced",
-        "label": "Advanced",
+        "label": "Advanced (optional)",
         "elements": [
+          {
+            "name": "advancedIntro",
+            "type": "Microsoft.Common.TextBlock",
+            "visible": true,
+            "options": {
+              "text": "Most people can skip this tab — just click Next. Only change these if you know you need to."
+            }
+          },
           {
             "name": "appName",
             "type": "Microsoft.Common.TextBox",
-            "label": "App name",
+            "label": "Service name",
             "defaultValue": "ig-d365-relay",
-            "toolTip": "Name for the Container App. Lowercase letters, numbers and hyphens.",
+            "toolTip": "A name for the service in Azure. The default works fine. Lowercase letters, numbers and hyphens only.",
             "constraints": {
               "required": true,
-              "regex": "^[a-z0-9-]{3,24}$",
-              "validationMessage": "3-24 chars: lowercase letters, numbers, hyphens."
+              "validations": [
+                {
+                  "regex": "^[a-z0-9-]{3,24}$",
+                  "message": "3-24 characters: lowercase letters, numbers and hyphens only."
+                }
+              ]
             }
           },
           {
@@ -137,7 +216,7 @@
             "type": "Microsoft.Common.TextBox",
             "label": "Container image",
             "defaultValue": "ghcr.io/moliveirapinto/d365-instagram-channel:latest",
-            "toolTip": "Leave the default unless you publish your own build.",
+            "toolTip": "The prebuilt program that runs the connector. Leave this exactly as-is unless you publish your own build.",
             "constraints": {
               "required": true
             }
