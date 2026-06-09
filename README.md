@@ -30,37 +30,52 @@ flowchart LR
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmoliveirapinto%2Fd365-instagram-channel%2Fmain%2Finfra%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fmoliveirapinto%2Fd365-instagram-channel%2Fmain%2Finfra%2FcreateUiDefinition.json)
 
-### 2. Fill in the form
+### 2. Follow the guided form
 
-The portal opens a guided form. You only need five values:
+The portal opens a **step‑by‑step wizard**. Each tab has plain‑language help and a link to the matching guide, so you can't get lost. You only need five values:
 
-| Field | Where it comes from |
-| --- | --- |
-| Instagram account ID (IG_ID) | Your Instagram professional account — see [docs/01-meta-setup.md](docs/01-meta-setup.md) |
-| App Secret | Meta app → Settings → Basic |
-| Webhook verify token | **Any** string you invent (you'll reuse it in Meta) |
-| Instagram access token | Long‑lived Instagram User token |
-| Direct Line secret | Dynamics 365 Omnichannel custom channel — see [docs/02-d365-setup.md](docs/02-d365-setup.md) |
+| Tab | Field | Where it comes from |
+| --- | --- | --- |
+| Instagram keys | Instagram account ID | Your Instagram professional account — see [docs/01-meta-setup.md](docs/01-meta-setup.md) |
+| Instagram keys | Meta App Secret | Meta app → Settings → Basic |
+| Instagram keys | Instagram access token | Long‑lived Instagram User token |
+| Instagram keys | Webhook verify token | A word you make up — we even prefill one. You'll reuse the **exact same** value in Meta. |
+| Dynamics 365 key | Direct Line secret | Dynamics 365 Omnichannel custom channel — see [docs/02-d365-setup.md](docs/02-d365-setup.md) |
+
+> The **Advanced (optional)** tab can be skipped — just click **Next**.
 
 ### 3. Click **Review + create**
 
 Azure builds everything (about 2–3 minutes).
 
-### 4. Copy the webhook URL
+### 4. Open the Setup Assistant
 
-When it finishes, open **Outputs** and copy **`webhookUrl`**. Paste it into the Meta webhook configuration (one box). Done.
+When the deployment finishes, open **Outputs** and click **`setupUrl`**. This opens a friendly **Setup Assistant** page that does the fiddly parts for you:
 
-That's the entire customer experience: **click → fill 5 boxes → copy 1 URL.**
+* ✅ shows a green/red check for every value you entered;
+* 🔌 **tests your Instagram and Dynamics 365 connections** live (no guessing whether a key is right);
+* 📋 gives you the **webhook URL** to copy into Meta, then **subscribes your account to messages in one click**;
+* ♻️ turns a short‑lived Instagram token into a **long‑lived** one (no command line) when you need to refresh.
+
+To run the tests you unlock the page with your **Meta App Secret** (so only you can use it).
+
+### 5. Copy the webhook URL into Meta
+
+In the Setup Assistant (or from the `webhookUrl` output), copy the callback URL and paste it into the Meta webhook configuration with your verify token. Click **Verify and save**, then hit **Subscribe** in the assistant. Done.
+
+That's the entire customer experience: **click → follow the wizard → open the Setup Assistant → you're live.**
 
 ---
 
 ## Setup guides
 
-Follow these in order:
+Follow these in order. The first two gather your five values; the third is the short version to hand to a customer.
 
-1. **[Meta / Instagram setup](docs/01-meta-setup.md)** — create the app, get the token, find your IG_ID.
-2. **[Dynamics 365 setup](docs/02-d365-setup.md)** — register the custom channel, get the Direct Line secret, build a workstream.
-3. **[Customer quickstart](docs/03-customer-quickstart.md)** — the short, screenshot‑driven version to hand to a customer.
+| # | Guide | What you get | Time |
+| --- | --- | --- | --- |
+| 1 | **[Meta / Instagram setup](docs/01-meta-setup.md)** | App Secret, IG_ID, access token, verify token | ~20 min |
+| 2 | **[Dynamics 365 setup](docs/02-d365-setup.md)** | Direct Line secret, a routed workstream | ~15 min |
+| 3 | **[Customer quickstart](docs/03-customer-quickstart.md)** | A one-page checklist for the deployer | ~5 min |
 
 ---
 
