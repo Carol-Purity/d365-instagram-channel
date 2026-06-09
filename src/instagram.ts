@@ -138,3 +138,93 @@ export async function sendAttachment(
     throw new Error(`Instagram sendAttachment failed: ${res.status}`);
   }
 }
+
+/** The Instagram profile behind an access token. */
+export interface InstagramProfile {
+  userId: string;
+  username?: string;
+}
+
+/**
+ * Confirm the access token works by reading the account profile.
+ * Used by the Setup Assistant to give the user an instant green check.
+ * Throws a friendly Error when the token is wrong/expired.
+ */
+export async function fetchProfile(config: AppConfig): Promise<InstagramProfile> {
+  const url = `${config.graphBaseUrl}/${config.graphApiVersion}/me?fields=user_id,username`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${config.instagramAccessToken}` },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    log.warn("Instagram fetchProfile failed", { status: res.status, detail });
+    throw new Error(
+      res.status === 401 || res.status === 400
+        ? "The access token was rejected by Instagram. It may be wrong or expired."
+        : `Instagram returned an error (HTTP ${res.status}).`
+    );
+  }
+
+  const data = (await res.json()) as { user_id?: string; username?: string };
+  return { userId: String(data.user_id ?? ""), username: data.username };
+}
+
+/** Result of exchanging a short-lived token for a long-lived one. */
+export interface LongLivedToken {
+  accessToken: string;
+  /** Seconds until the new token expires (typically ~60 days). */
+  expiresIn?: number;
+}
+
+/**
+ * Exchange a short-lived Instagram User token for a long-lived one (~60 days),
+ * so the user never has to run a curl command. Requires the App Secret.
+ */
+export async function exchangeLongLivedToken(
+  config: AppConfig,
+  shortLivedToken: string
+): Promise<LongLivedToken> {
+  const params = new URLSearchParams({
+    grant_type: "ig_exchange_token",
+    client_secret: config.instagramAppSecret,
+    access_token: shortLivedToken,
+  });
+  const url = `${config.graphBaseUrl}/access_token?${params.toString()}`;
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    log.warn("Instagram token exchange failed", { status: res.status, detail });
+    throw new Error(
+      "Could not exchange the token. Check that the short-lived token is valid and the App Secret is correct."
+    );
+  }
+
+  const data = (await res.json()) as { access_token?: string; expires_in?: number };
+  if (!data.access_token) {
+    throw new Error("Instagram did not return a long-lived token.");
+  }
+  return { accessToken: data.access_token, expiresIn: data.expires_in };
+}
+
+/**
+ * Subscribe this Instagram account to the app's `messages` webhook, so DMs
+ * start flowing in without the user doing it by hand in the Meta dashboard.
+ */
+export async function subscribeWebhook(config: AppConfig): Promise<void> {
+  const url = `${config.graphBaseUrl}/${config.graphApiVersion}/${config.instagramAccountId}/subscribed_apps?subscribed_fields=messages`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.instagramAccessToken}` },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    log.warn("Instagram subscribeWebhook failed", { status: res.status, detail });
+    throw new Error(
+      `Could not subscribe the account to messages (HTTP ${res.status}). ` +
+        "Make sure the Callback URL and verify token are saved in Meta first."
+    );
+  }
+}
